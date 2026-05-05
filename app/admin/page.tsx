@@ -19,11 +19,51 @@ import {
   ChevronRight,
   Award,
   Clock,
-  XCircle  // ✅ Imported from lucide-react - no need to redefine
+  XCircle
 } from "lucide-react";
 
+// Define interfaces for your data types
+interface User {
+  id: string;
+  name?: string;
+  fullName?: string;
+  displayName?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  role?: string;
+  userType?: string;
+  accountType?: string;
+  companyName?: string;
+  company?: string;
+  bio?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Application {
+  id: string;
+  userName?: string;
+  userEmail?: string;
+  jobTitle?: string;
+  companyName?: string;
+  status?: string;
+  appliedAt: Date;
+}
+
+interface Stats {
+  totalJobs: number;
+  totalApplications: number;
+  totalUsers: number;
+  totalEmployers: number;
+  totalJobseekers: number;
+  pendingApplications: number;
+  shortlistedApplications: number;
+  hiredApplications: number;
+}
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     totalJobs: 0,
     totalApplications: 0,
     totalUsers: 0,
@@ -34,14 +74,14 @@ export default function AdminDashboard() {
     hiredApplications: 0
   });
   
-  const [recentUsers, setRecentUsers] = useState([]);
-  const [recentApplications, setRecentApplications] = useState([]);
+  const [recentUsers, setRecentUsers] = useState<User[]>([]);
+  const [recentApplications, setRecentApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [userTypeFilter, setUserTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchAllData();
@@ -54,7 +94,7 @@ export default function AdminDashboard() {
       
       // Fetch all users
       const usersSnap = await getDocs(collection(db, "users"));
-      const allUsers = usersSnap.docs.map(doc => ({
+      const allUsers: User[] = usersSnap.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt || new Date(),
@@ -80,7 +120,7 @@ export default function AdminDashboard() {
       
       // Fetch applications
       const appsSnap = await getDocs(collection(db, "applications"));
-      const applications = appsSnap.docs.map(doc => ({
+      const applications: Application[] = appsSnap.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         appliedAt: doc.data().appliedAt?.toDate?.() || doc.data().appliedAt || new Date()
@@ -103,11 +143,11 @@ export default function AdminDashboard() {
       });
       
       // Get recent users
-      const sortedUsers = [...allUsers].sort((a, b) => b.createdAt - a.createdAt);
+      const sortedUsers = [...allUsers].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       setRecentUsers(sortedUsers.slice(0, 10));
       
       // Get recent applications
-      const sortedApps = [...applications].sort((a, b) => b.appliedAt - a.appliedAt);
+      const sortedApps = [...applications].sort((a, b) => b.appliedAt.getTime() - a.appliedAt.getTime());
       setRecentApplications(sortedApps.slice(0, 10));
       
       console.log(`✅ Found: ${employers.length} employers, ${jobseekers.length} job seekers`);
@@ -149,7 +189,7 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  const getFilteredUsers = () => {
+  const getFilteredUsers = (): User[] => {
     let filtered = [...recentUsers];
     
     if (searchTerm) {
@@ -179,7 +219,7 @@ export default function AdminDashboard() {
     currentPage * itemsPerPage
   );
 
-  const getRoleBadge = (user) => {
+  const getRoleBadge = (user: User) => {
     const role = (user.role || user.userType || "jobseeker").toLowerCase();
     const isEmployer = role === "employer";
     
@@ -195,7 +235,13 @@ export default function AdminDashboard() {
     );
   };
 
-  const StatCard = ({ title, value, icon: Icon, color, onClick }) => (
+  const StatCard = ({ title, value, icon: Icon, color, onClick }: { 
+    title: string; 
+    value: number; 
+    icon: any; 
+    color: string; 
+    onClick?: () => void;
+  }) => (
     <div 
       onClick={onClick}
       className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer border border-gray-100"
@@ -338,7 +384,7 @@ export default function AdminDashboard() {
                 ))}
                 {recentApplications.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                       No applications found
                     </td>
                   </tr>
@@ -465,7 +511,7 @@ export default function AdminDashboard() {
                 ))}
                 {paginatedUsers.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       No users found matching your search
                     </td>
                   </tr>
@@ -499,14 +545,14 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* User Details Modal - Using XCircle from lucide-react */}
+      {/* User Details Modal */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedUser(null)}>
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b p-5 flex justify-between items-center">
               <h2 className="text-xl font-bold">User Details</h2>
               <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-gray-600">
-                <XCircle className="w-6 h-6" /> {/* ✅ Using imported XCircle */}
+                <XCircle className="w-6 h-6" />
               </button>
             </div>
             <div className="p-6 space-y-6">
